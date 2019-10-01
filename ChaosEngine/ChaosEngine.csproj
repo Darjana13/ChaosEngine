@@ -72,6 +72,12 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="ChaosComponents.cs" />
+    <Compile Include="ChaosMath.cs" />
+    <Compile Include="ChaosPhysics.cs" />
+    <Compile Include="ChaosTime.cs" />
+    <Compile Include="ChaosUtils.cs" />
+    <Compile Include="ChaosLogger.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>

@@ -33,10 +33,13 @@ namespace ChaosEngine
         private void GLView_Load(object sender, EventArgs e)
         {
             GL.ClearColor(Color.FromArgb(100, 100, 100));
+            ChaosTime.Initialize();
         }
 
         private void GLView_Paint(object sender, System.Windows.Forms.PaintEventArgs e)
         {
+            ChaosTime.UpdateTime();
+            ChaosPhysics.Frame();
             GL.Viewport(0, 0, GLView.Width, GLView.Height);
             GL.Clear(ClearBufferMask.ColorBufferBit);
 
