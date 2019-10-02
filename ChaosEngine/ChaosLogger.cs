@@ -12,7 +12,7 @@ namespace ChaosEngine
         private static string logPath;
         public static void Initialize()
         {
-            Initialize("Logs\\" + DateTime.Now.Date.ToString() + " - " + DateTime.Now.TimeOfDay.ToString() + ".txt");
+            Initialize("Logs\\" + DateTime.Now.ToString("M/d/yyyy - hh-mm-ss") + ".txt");
         }
         public static void Initialize(string path)
         {
@@ -24,7 +24,7 @@ namespace ChaosEngine
         }
         public static void Log(string text)
         {
-            LogRaw('[' + DateTime.Now.TimeOfDay.ToString() + "]: " + text);
+            LogRaw('[' + DateTime.Now.ToString("hh:mm:ss") + "]: " + text);
         }
         public static void LogRaw(string text)
         {

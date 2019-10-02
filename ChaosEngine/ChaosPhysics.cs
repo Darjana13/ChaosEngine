@@ -5,10 +5,11 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Runtime.Serialization;
 
 namespace ChaosEngine
 {
-    static class ChaosPhysics
+    internal static class ChaosPhysics
     {
         private static List<ChaosObject> world = new List<ChaosObject>();
         private static double timeSinceLastFixedUpdate = 0;
@@ -18,6 +19,10 @@ namespace ChaosEngine
         public static List<ChaosObject> GetWorld()
         {
             return new List<ChaosObject>(world);
+        }
+        public static bool HasObject(ChaosObject obj)
+        {
+            return world.IndexOf(obj) != -1;
         }
         public static void Frame()
         {
@@ -30,6 +35,17 @@ namespace ChaosEngine
             }
             Update();
             LateUpdate();
+            DestroyObjects();
+        }
+        private static void DestroyObjects()
+        {
+            for (int i = 0; i < world.Count; i++)
+                if (world[i].shouldBeDestroyed)
+                {
+                    world[i].setDestroyedToTrue();
+                    world.RemoveAt(i);
+                    i--;
+                }
         }
         private static void FixedUpdate()
         {
@@ -55,26 +71,67 @@ namespace ChaosEngine
     class ChaosObject
     {
         public string name = "object";
-        public ChaosObject parent = null;
+        public ChaosObject parent { get; private set; }
         public List<ChaosObject> childs = new List<ChaosObject>();
         public List<string> tags = new List<string>();
-        private List<Component> components = new List<Component>();
-        public bool shouldBeDestroyed { get; private set; } = false;
+        internal bool shouldBeDestroyed { get; private set; } = false;
+        private List<Component> components = new List<Component>() { new Transform() };
+        private bool destroyed = false;
+        public Component addComponent(Type type)
+        {
+            if (destroyed)
+                throw new Exception("You're trying to access destroyed object.");
+
+            Component comp = (Component)FormatterServices.GetUninitializedObject(type);
+            type.GetProperty("parent", System.Reflection.BindingFlags.Instance).SetValue(comp, this);
+            return comp;
+        }
+        public T addComponent<T>()
+        {
+            if (destroyed)
+                throw new Exception("You're trying to access destroyed object.");
+
+            Type type = typeof(T);
+            if (!type.IsSubclassOf(typeof(Component)))
+                throw new Exception(type.ToString() + " not a component!");
+            T comp = (T)FormatterServices.GetUninitializedObject(typeof(T));
+            (comp as Component).parent = this;
+            return comp;
+        }
+        internal bool isDestroyed()
+        {
+            return destroyed;
+        }
+        internal void setDestroyedToTrue()
+        {
+            destroyed = true;
+        }
         public void destroy()
         {
+            if (destroyed)
+                throw new Exception("You're trying to access destroyed object.");
+
             shouldBeDestroyed = true;
         }
-        public void fixedUpdate()
+        public void setParent(ChaosObject parent)
+        {
+            if (destroyed)
+                throw new Exception("You're trying to access destroyed object.");
+
+            if (ChaosPhysics.HasObject(parent))
+                this.parent = parent;
+        }
+        internal void fixedUpdate()
         {
             foreach (Component comp in components)
                 comp.fixedUpdate();
         }
-        public void update()
+        internal void update()
         {
             foreach (Component comp in components)
                 comp.update();
         }
-        public void lateUpdate()
+        internal void lateUpdate()
         {
             foreach (Component comp in components)
                 comp.lateUpdate();

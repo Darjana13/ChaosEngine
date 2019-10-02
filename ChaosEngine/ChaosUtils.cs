@@ -8,6 +8,65 @@ using System.IO;
 
 namespace ChaosEngine
 {
+    class Model
+    {
+        public List<Vector3> vertices = new List<Vector3>();
+        public List<Vector3> normals = new List<Vector3>();
+        public List<double[]> texCoords = new List<double[]>();
+        public List<int[]> polygons = new List<int[]>();
+        public List<int[]> normalsPolygons = new List<int[]>();
+        public List<int[]> texPolygons = new List<int[]>();
+        public bool hasNormals = false;
+        public bool hasTexture = false;
+        public static Model parse(string fileName)
+        {
+            Model model = new Model();
+
+            StreamReader file = new StreamReader(File.OpenRead(fileName));
+            string line;
+            string[] words;
+            while ((line = file.ReadLine()) != null)
+            {
+                words = line.Split(' ');
+                switch (words[0])
+                {
+                    case "v":
+                        model.vertices.Add(new Vector3(double.Parse(words[1]), double.Parse(words[2]), double.Parse(words[3])));
+                        break;
+                    case "vt":
+                        model.texCoords.Add(words.Select<string, double>((word) => { return double.Parse(word); }).ToArray());
+                        model.hasTexture = true;
+                        break;
+                    case "vn":
+                        model.normals.Add(new Vector3(double.Parse(words[1]), double.Parse(words[2]), double.Parse(words[3])));
+                        model.hasNormals = true;
+                        break;
+                    case "f":
+                        int[] first = new int[words.Length - 1]; // vertices indexes
+                        int[] second = null; // texture, if there is texture, normals, if there is normals and no textures
+                        int[] third = null; // normals, if there is normals and texture
+                        if (model.hasNormals || model.hasTexture)
+                            second = new int[words.Length - 1];
+                        if (model.hasNormals && model.hasTexture)
+                            third = new int[words.Length - 1];
+                        int[] curIndexes;
+                        for (int i = 0; i < words.Length - 1; i++)
+                        {
+                            curIndexes = words[i + 1].Split(new string[] { "/", "//", "\\", "\\\\" }, StringSplitOptions.RemoveEmptyEntries)
+                                                 .Select<string, int>((index) => { return int.Parse(index); }).ToArray();
+                            first[i] = curIndexes[0];
+                            if (curIndexes.Length > 1)
+                                second[i] = curIndexes[1];
+                            if (curIndexes.Length > 2)
+                                third[i] = curIndexes[2];
+                        }
+                        break;
+                }
+            }
+
+            return model;
+        }
+    }
     static class ChaosUtils
     {
         public static int LoadShaderProgram(string vertexShaderPath, string fragmentShaderPath)
@@ -52,7 +111,10 @@ namespace ChaosEngine
             if (File.Exists(shaderPath))
                 shaderText = File.ReadAllText(shaderPath);
             else
+            {
                 Logger.Log("Shader file " + shaderPath + " not found.");
+                return 0;
+            }
 
             int shaderIndex = GL.CreateShader(shaderType);
             if (shaderIndex == 0)

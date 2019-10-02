@@ -6,7 +6,7 @@
         xmlns:opentk="clr-namespace:OpenTK;assembly=OpenTK.GLControl"
         xmlns:local="clr-namespace:ChaosEngine"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="450" Width="800" SizeChanged="Window_SizeChanged">
     <Grid x:Name="MainGrid">
         <WindowsFormsHost Initialized="WindowsFormsHost_Initialized">
             <opentk:GLControl x:Name="GLView" Paint="GLView_Paint" Load="GLView_Load"/>

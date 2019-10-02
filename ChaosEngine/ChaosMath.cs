@@ -10,7 +10,9 @@ namespace ChaosEngine
     {
         public static Vector3 zero { get { return new Vector3(); } }
         private static double epsilon = 1e-6;
-        double x, y, z;
+        public double x { get; private set; }
+        public double y { get; private set; }
+        public double z { get; private set; }
         public Vector3(double x = 0, double y = 0, double z = 0)
         {
             this.x = x;
@@ -100,12 +102,12 @@ namespace ChaosEngine
         /// Component multiplication
         /// </summary>
         /// <returns>New vector - (x1*x2, y1*y2, z1*z2)</returns>
-        public static Vector3 compMul(Vector3 v1, Vector3 v2)
+        public Vector3 compMul(Vector3 vec)
         {
-            return new Vector3(v1.x * v2.x, v1.y * v2.y, v1.z * v2.z);
+            return new Vector3(x * vec.x, y * vec.y, z * vec.z);
         }
         /// <summary>
-        /// Returns normalized new vector
+        /// Returns normalized copy of this vector
         /// </summary>
         public Vector3 normalized()
         {
@@ -158,5 +160,83 @@ namespace ChaosEngine
         {
             return "(" + x.ToString() + ", " + y.ToString() + ", " + z.ToString() + ")";
         }
+    }
+    class Matrix4
+    {
+        private double[,] values = new double[4,4]; // [rowIndex, columnIndex]
+        public Matrix4()
+        {
+
+        }
+        public Matrix4(double[] values)
+        {
+            for (int i = 0; i < values.Length && i < 16; i++)
+                this.values[i / 4, i % 4] = values[i];
+        }
+        /// <summary>
+        /// Transposes this matrix
+        /// </summary>
+        public void transpose()
+        {
+            double temp;
+            for (int i = 0; i < 3; i++)
+                for (int j = i + 1; j < 4; j++)
+                {
+                    temp = values[i, j];
+                    values[i, j] = values[j, i];
+                    values[j, i] = temp;
+                }
+        }
+        /// <summary>
+        /// Returns transposed copy of this matrix
+        /// </summary>
+        public Matrix4 transposed()
+        {
+            Matrix4 newMatrix = new Matrix4();
+            for (int i = 0; i < 4; i++)
+                for (int j = 0; j < 4; j++)
+                    newMatrix.values[i, j] = values[j, i];
+            return newMatrix;
+        }
+        /// <summary>
+        /// Returns identity matrix
+        /// </summary>
+        public static Matrix4 Identity()
+        {
+            return new Matrix4(new double[] { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 });
+        }
+        public static Matrix4 operator*(Matrix4 mat1, Matrix4 mat2)
+        {
+            Matrix4 newMatrix = new Matrix4();
+            for (int i = 0; i < 4; i++)
+                for (int j = 0; j < 4; j++)
+                    for (int c = 0; c < 4; c++)
+                        newMatrix.values[i, j] = mat1.values[i, c] * mat2.values[c, j];
+            return newMatrix;
+        }
+        /// <summary>
+        /// Multiplies matrix by vector, where vector represents point in space (vector = (x, y, z, 1))
+        /// </summary>
+        public Vector3 multByPoint(Vector3 vec)
+        {
+            return new Vector3(values[0, 0], values[1, 0], values[2, 0]) * vec.x +
+                   new Vector3(values[0, 1], values[1, 1], values[2, 1]) * vec.y +
+                   new Vector3(values[0, 2], values[1, 2], values[2, 2]) * vec.z +
+                   new Vector3(values[0, 3], values[1, 3], values[2, 3]);
+        }
+        /// <summary>
+        /// Multiplies matrix by vector, where vector represents direction (vector = (x, y, z, 0))
+        /// </summary>
+        public Vector3 multByDirection(Vector3 vec)
+        {
+            return new Vector3(values[0, 0], values[1, 0], values[2, 0]) * vec.x +
+                   new Vector3(values[0, 1], values[1, 1], values[2, 1]) * vec.y +
+                   new Vector3(values[0, 2], values[1, 2], values[2, 2]) * vec.z;
+        }
+    }
+    // TODO: write this shit
+    class Quaternion
+    {
+
     }
 }
