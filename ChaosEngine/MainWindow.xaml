@@ -6,10 +6,18 @@
         xmlns:opentk="clr-namespace:OpenTK;assembly=OpenTK.GLControl"
         xmlns:local="clr-namespace:ChaosEngine"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800" SizeChanged="Window_SizeChanged">
+        Title="Chaos engine" Height="1080" Width="1920" Icon="Resources/ChaosEngine.ico" WindowState="Maximized">
     <Grid x:Name="MainGrid">
-        <WindowsFormsHost Initialized="WindowsFormsHost_Initialized">
-            <opentk:GLControl x:Name="GLView" Paint="GLView_Paint" Load="GLView_Load"/>
-        </WindowsFormsHost>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="50"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <DockPanel LastChildFill="True" Grid.Row="1">
+            <DockPanel LastChildFill="False" Width="500" Background="#FF7A7A7A"/>
+            <WindowsFormsHost x:Name="SceneView" Initialized="WindowsFormsHost_Initialized" SizeChanged="WindowsFormsHost_SizeChanged" Margin="0">
+                <opentk:GLControl x:Name="GLView" Paint="GLView_Paint" Load="GLView_Load"/>
+            </WindowsFormsHost>
+        </DockPanel>
+        <Grid x:Name="ToolGrid" Background="#FF232323"/>
     </Grid>
 </Window>

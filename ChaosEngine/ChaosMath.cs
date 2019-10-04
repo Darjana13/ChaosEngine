@@ -9,6 +9,15 @@ namespace ChaosEngine
     class Vector3
     {
         public static Vector3 zero { get { return new Vector3(); } }
+
+        // !!!RIGHT-HANDED COORDINATE SYSTEM!!! x - right, y - up, z - forward
+        public static Vector3 right { get { return new Vector3(1, 0, 0); } }
+        public static Vector3 left { get { return new Vector3(-1, 0, 0); } }
+        public static Vector3 forward { get { return new Vector3(0, 0, 1); } }
+        public static Vector3 back { get { return new Vector3(0, 0, -1); } }
+        public static Vector3 up { get { return new Vector3(0, 1, 0); } }
+        public static Vector3 down { get { return new Vector3(0, -1, 0); } }
+
         private static double epsilon = 1e-6;
         public double x { get; private set; }
         public double y { get; private set; }
@@ -63,6 +72,10 @@ namespace ChaosEngine
             return new Vector3(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
         }
         public static Vector3 operator*(Vector3 vec, double value)
+        {
+            return new Vector3(vec.x * value, vec.y * value, vec.z * value);
+        }
+        public static Vector3 operator*(double value, Vector3 vec)
         {
             return new Vector3(vec.x * value, vec.y * value, vec.z * value);
         }
@@ -234,9 +247,177 @@ namespace ChaosEngine
                    new Vector3(values[0, 2], values[1, 2], values[2, 2]) * vec.z;
         }
     }
-    // TODO: write this shit
+    // do NOT ask me about this, i don't give a fuck how this works.
     class Quaternion
     {
-
+        private double w, x, y, z;
+        public Quaternion(double w = 0, double x = 0, double y = 0, double z = 0)
+        {
+            this.w = w;
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+        /// <summary>
+        /// Normalizes this quaternion
+        /// </summary>
+        public void normalize()
+        {
+            double length = magnitude();
+            w /= length;
+            x /= length;
+            y /= length;
+            z /= length;
+        }
+        /// <summary>
+        /// Returns normalized copy of this quaternion
+        /// </summary>
+        public Quaternion normalized()
+        {
+            double length = magnitude();
+            return new Quaternion(w / length, x / length, y / length, z / length);
+        }
+        /// <summary>
+        /// Returns magnitude of this quaternion, equal to length()
+        /// </summary>
+        public double magnitude()
+        {
+            return Math.Sqrt(w * w + x * x + y * y + z * z);
+        }
+        /// <summary>
+        /// Returns length of this quaternion, equal to magnitude()
+        /// </summary>
+        public double length()
+        {
+            return magnitude();
+        }
+        /// <summary>
+        /// returns squared magnitude of this quaternion, equal to squaredLength()
+        /// </summary>
+        public double squaredMagnitude()
+        {
+            return w * w + x * x + y * y + z * z;
+        }
+        /// <summary>
+        /// returns squared length of this quaternion, equal to squaredMagnitude()
+        /// </summary>
+        public double squaredLength()
+        {
+            return squaredMagnitude();
+        }
+        /// <summary>
+        /// Returns inversed copy of this quaternion (conjugated/squaredMagnitude)
+        /// </summary>
+        public Quaternion inversed()
+        {
+            Quaternion q = conjugated();
+            double magn = squaredMagnitude();
+            q.w /= magn;
+            q.x /= magn;
+            q.y /= magn;
+            q.z /= magn;
+            return q;
+        }
+        /// <summary>
+        /// Inverses this quaternion (conjugated/squaredMagnitude)
+        /// </summary>
+        public void inverse()
+        {
+            double magn = squaredMagnitude();
+            conjugate();
+            w /= magn;
+            x /= magn;
+            y /= magn;
+            z /= magn;
+        }
+        /// <summary>
+        /// Conjugates this vector (w, -x, -y, -z)
+        /// </summary>
+        public void conjugate()
+        {
+            x = -x;
+            y = -y;
+            z = -z;
+        }
+        /// <summary>
+        /// Returns conjugated copy of this quaternion (w, -x, -y, -z)
+        /// </summary>
+        public Quaternion conjugated()
+        {
+            return new Quaternion(w, -x, -y, -z);
+        }
+        /// <summary>
+        /// Returns quaternion (1, 0, 0, 0)
+        /// </summary>
+        public static Quaternion Identity()
+        {
+            return new Quaternion(1);
+        }
+        /// <summary>
+        /// Combines 2 rotations. Important: Second rotation comes first.
+        /// </summary>
+        public static Quaternion operator*(Quaternion q1, Quaternion q2)
+        {
+            return new Quaternion(q1.w * q2.w - q1.x * q2.x - q1.y - q2.y - q1.z * q2.z,
+                                  q1.w * q2.x + q1.x * q2.w + q1.y * q2.z - q1.z * q2.y,
+                                  q1.w * q2.y + q1.y * q2.w + q1.x * q2.z - q1.z * q2.x,
+                                  q1.w * q2.z + q1.z * q2.w + q1.x * q2.y - q1.y * q2.x);
+        }
+        public static Quaternion operator*(Quaternion q, Vector3 v)
+        {
+            return new Quaternion(- q.x * v.x - q.y - v.y - q.z * v.z,
+                                  q.w * v.x + q.y * v.z - q.z * v.y,
+                                  q.w * v.y + q.x * v.z - q.z * v.x,
+                                  q.w * v.z + q.x * v.y - q.y * v.x);
+        }
+        /// <summary>
+        /// Rotates vector v by quaternion q
+        /// </summary>
+        public Vector3 rotateVector(Vector3 vec)
+        {
+            Quaternion result = this * vec * inversed();
+            return new Vector3(result.x, result.y, result.z);
+        }
+        /// <summary>
+        /// Returns rotation matrix equal to this quaternion
+        /// </summary>
+        public Matrix4 toRotationMatrix()
+        {
+            return new Matrix4(new double[] { 1-2*(y*y+z*z), 2*(x*y-w*z), 2*(x*z+w*y), 0,
+                                              2*(x*y+w*z), 1-2*(x*x+z*z), 2*(y*z-w*x), 0,
+                                              2*(x*z-w*y), 2*(y*z+w*x), 1-2*(x*x+y*y), 0,
+                                              0, 0, 0, 1 });
+        }
+        /// <summary>
+        /// Returns quaternion represented by rotation around axis
+        /// </summary>
+        public static Quaternion FromAxisAngle(Vector3 axis, double angle)
+        {
+            double cos = Math.Cos(angle / 2.0);
+            double sin = Math.Sin(angle / 2.0);
+            return new Quaternion(cos, sin * axis.x, sin * axis.y, sin * axis.z);
+        }
+        /// <summary>
+        /// Returns quaternion representation of rotation in eulers. Order: YXZ
+        /// </summary>
+        public static Quaternion fromEuler(Vector3 eulers)
+        {
+            return FromAxisAngle(Vector3.forward, eulers.z) *
+                   FromAxisAngle(Vector3.right, eulers.x) *
+                   FromAxisAngle(Vector3.up, eulers.y);
+        }
+        /// <summary>
+        /// Returns eulers representation of rotation in this quaternion
+        /// </summary>
+        public Vector3 toEuler()
+        {
+            if (x * y + z * w == 0.5)
+                return new Vector3(Math.Asin(2 * x * y + 2 * z * w), 2 * Math.Atan2(x, w), 0);
+            else
+            if (x * y + z * w == -0.5)
+                return new Vector3(Math.Asin(2 * x * y + 2 * z * w), -2 * Math.Atan2(x, w), 0);
+            else
+                return new Vector3(Math.Asin(2 * x * y + 2 * z * w), Math.Atan2(2 * y * w - 2 * x * z, 1 - 2 * y * y - 2 * z * z), Math.Atan2(2 * x * w - 2 * y * z, 1 - 2 * x * x - 2 * z * z));
+        }
     }
 }

@@ -74,7 +74,7 @@ namespace ChaosEngine
             GLView.SwapBuffers();
         }
 
-        private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+        private void WindowsFormsHost_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             GL.Viewport(0, 0, GLView.Width, GLView.Height);
         }
