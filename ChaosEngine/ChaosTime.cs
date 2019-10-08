@@ -7,11 +7,12 @@ using System.Diagnostics;
 
 namespace ChaosEngine
 {
-    static class ChaosTime
+    public static class ChaosTime
     {
-        private static Stopwatch time;
         public static double deltaTime { get; private set; }
         public static double fixedDeltaTime { get; private set; } = 0.04; // ~25 physical frames per second
+        private static Stopwatch time;
+
         public static void Initialize()
         {
             time = new Stopwatch();

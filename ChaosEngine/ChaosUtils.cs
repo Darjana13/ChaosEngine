@@ -8,16 +8,16 @@ using System.IO;
 
 namespace ChaosEngine
 {
-    class Model
+    public sealed class Model
     {
-        public List<Vector3> vertices = new List<Vector3>();
-        public List<Vector3> normals = new List<Vector3>();
-        public List<double[]> texCoords = new List<double[]>();
-        public List<int[]> polygons = new List<int[]>();
-        public List<int[]> normalsPolygons = new List<int[]>();
-        public List<int[]> texPolygons = new List<int[]>();
-        public bool hasNormals = false;
-        public bool hasTexture = false;
+        public List<Vector3> vertices { get; private set; } = new List<Vector3>();
+        public List<Vector3> normals { get; private set; } = new List<Vector3>();
+        public List<double[]> texCoords { get; private set; } = new List<double[]>();
+        public List<int[]> polygons { get; private set; } = new List<int[]>();
+        public List<int[]> normalsPolygons { get; private set; } = new List<int[]>();
+        public List<int[]> texPolygons { get; private set; } = new List<int[]>();
+        public bool hasNormals { get; private set; } = false;
+        public bool hasTexture { get; private set; } = false;
         public static Model parse(string fileName)
         {
             Model model = new Model();
@@ -67,7 +67,7 @@ namespace ChaosEngine
             return model;
         }
     }
-    static class ChaosUtils
+    internal static class ChaosUtils
     {
         public static int LoadShaderProgram(string vertexShaderPath, string fragmentShaderPath)
         {

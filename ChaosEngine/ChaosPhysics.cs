@@ -13,6 +13,7 @@ namespace ChaosEngine
     {
         private static List<ChaosObject> world = new List<ChaosObject>();
         private static double timeSinceLastFixedUpdate = 0;
+
         /// <summary>
         /// Returns copy of world list
         /// </summary>
@@ -26,6 +27,7 @@ namespace ChaosEngine
         }
         public static void Frame()
         {
+            CountMatrices();
             world.RemoveAll((obj) => { return obj.shouldBeDestroyed; });
             timeSinceLastFixedUpdate += ChaosTime.deltaTime;
             if (timeSinceLastFixedUpdate > ChaosTime.fixedDeltaTime)
@@ -36,6 +38,12 @@ namespace ChaosEngine
             Update();
             LateUpdate();
             DestroyObjects();
+        }
+        private static void CountMatrices()
+        {
+            foreach (ChaosObject obj in world)
+                if (obj.parent == null)
+                    obj.countMatrices();
         }
         private static void DestroyObjects()
         {
@@ -51,6 +59,9 @@ namespace ChaosEngine
         {
             foreach (ChaosObject obj in world)
                 obj.fixedUpdate();
+            foreach (ChaosObject obj in world)
+                foreach (Collider col in obj.getComponents<Collider>())
+                    col.applyChanges();
         }
         private static void Update()
         {
@@ -68,43 +79,89 @@ namespace ChaosEngine
         //
         //}
     }
-    class ChaosObject
+    public sealed class ChaosObject
     {
-        public string name = "object";
+        public bool enabled { get { if (parent != null && !parent.enabled) return false; return _enabled; } set { _enabled = value; } }
+        public string name { get; private set; } = "object";
         public ChaosObject parent { get; private set; }
-        public List<ChaosObject> childs = new List<ChaosObject>();
-        public List<string> tags = new List<string>();
+        public List<string> tags { get; private set; } = new List<string>();
+        public Transform transform { get { return components[0] as Transform; } }
         internal bool shouldBeDestroyed { get; private set; } = false;
+        private List<ChaosObject> childs = new List<ChaosObject>();
         private List<Component> components = new List<Component>() { new Transform() };
         private bool destroyed = false;
+        private bool _enabled = true;
+
+        public ChaosObject()
+        {
+            addComponent<Transform>();
+        }
+        public void setName(string name)
+        {
+            if (destroyed)
+                throw new Exception("You're trying to access destroyed object.");
+
+            this.name = name;
+        }
         public Component addComponent(Type type)
         {
             if (destroyed)
                 throw new Exception("You're trying to access destroyed object.");
+            if (!type.IsSubclassOf(typeof(Component)))
+                throw new Exception("Type must be inherited from component!");
+            if (type.IsDefined(typeof(SinglePerObject), false) && getComponent(type) != null)
+                throw new Exception("Only one component of this type per object.");
 
             Component comp = (Component)FormatterServices.GetUninitializedObject(type);
-            type.GetProperty("parent", System.Reflection.BindingFlags.Instance).SetValue(comp, this);
+            comp.parent = this;
+            comp.awake();
             return comp;
         }
-        public T addComponent<T>()
+        public T addComponent<T>() where T : Component
         {
             if (destroyed)
                 throw new Exception("You're trying to access destroyed object.");
+            if (typeof(T).IsDefined(typeof(SinglePerObject), false) && getComponent<T>() != null)
+                throw new Exception("Only one component of this type per object.");
 
-            Type type = typeof(T);
-            if (!type.IsSubclassOf(typeof(Component)))
-                throw new Exception(type.ToString() + " not a component!");
             T comp = (T)FormatterServices.GetUninitializedObject(typeof(T));
-            (comp as Component).parent = this;
+            comp.parent = this;
+            comp.awake();
             return comp;
         }
-        internal bool isDestroyed()
+        public Component getComponent(Type type)
         {
-            return destroyed;
+            if (!type.IsSubclassOf(typeof(Component)))
+                throw new Exception("Type must be inherited from component!");
+            foreach (Component comp in components)
+                if (type.IsInstanceOfType(comp))
+                    return comp;
+            return null;
         }
-        internal void setDestroyedToTrue()
+        public T getComponent<T>() where T : Component
         {
-            destroyed = true;
+            foreach (Component comp in components)
+                if (comp is T)
+                    return (T)comp;
+            return null;
+        }
+        public Component[] getComponents(Type type)
+        {
+            if (!type.IsSubclassOf(typeof(Component)))
+                throw new Exception("Type must be inherited from component!");
+            List<Component> comps = new List<Component>();
+            foreach (Component comp in components)
+                if (type.IsInstanceOfType(comp))
+                    comps.Add(comp);
+            return comps.ToArray();
+        }
+        public T[] getComponents<T>() where T : Component
+        {
+            List<T> comps = new List<T>();
+            foreach (Component comp in components)
+                if (comp is T)
+                    comps.Add((T)comp);
+            return comps.ToArray();
         }
         public void destroy()
         {
@@ -119,7 +176,28 @@ namespace ChaosEngine
                 throw new Exception("You're trying to access destroyed object.");
 
             if (ChaosPhysics.HasObject(parent))
+            {
+                if (this.parent != null)
+                    this.parent.removeChild(this);
                 this.parent = parent;
+                this.parent.addChild(this);
+            }
+        }
+        public void addChild(ChaosObject child)
+        {
+            childs.Add(child);
+        }
+        public void removeChild(ChaosObject child)
+        {
+            childs.Remove(child);
+        }
+        internal bool isDestroyed()
+        {
+            return destroyed;
+        }
+        internal void setDestroyedToTrue()
+        {
+            destroyed = true;
         }
         internal void fixedUpdate()
         {
@@ -135,6 +213,12 @@ namespace ChaosEngine
         {
             foreach (Component comp in components)
                 comp.lateUpdate();
+        }
+        internal void countMatrices()
+        {
+            transform.countMatrices();
+            foreach (ChaosObject obj in childs)
+                obj.countMatrices();
         }
     }
 }

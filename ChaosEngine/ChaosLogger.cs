@@ -7,7 +7,7 @@ using System.IO;
 
 namespace ChaosEngine
 {
-    static class Logger
+    internal static class Logger
     {
         private static string logPath;
         public static void Initialize()
